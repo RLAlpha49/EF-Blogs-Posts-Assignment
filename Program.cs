@@ -70,6 +70,17 @@ do
   {
     // delete blog
     Console.WriteLine("Choose the blog to delete:");
+    var db = new DataContext();
+    var blog = GetBlog(db);
+    if (blog != null)
+    {
+      // TODO: delete blog
+      logger.Info($"Blog (id: {blog.BlogId}) deleted");
+    }
+    else
+    {
+      logger.Error("Blog is null");
+    }
   }
   else if (String.IsNullOrEmpty(choice))
   {
@@ -79,3 +90,19 @@ do
 } while (true);
 
 logger.Info("Program ended");
+
+static Blog? GetBlog(DataContext db)
+{
+  // display all blogs
+  var blogs = db.Blogs.OrderBy(b => b.BlogId);
+  foreach (Blog b in blogs)
+  {
+    Console.WriteLine($"{b.BlogId}: {b.Name}");
+  }
+  if (int.TryParse(Console.ReadLine(), out int BlogId))
+  {
+    Blog blog = db.Blogs.FirstOrDefault(b => b.BlogId == BlogId)!;
+    return blog;
+  }
+  return null;
+}
