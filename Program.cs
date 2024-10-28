@@ -42,10 +42,20 @@ do
     if (isValid)
     {
       var db = new DataContext();
-      logger.Info("Validation passed");
-      // save blog to db
-      db.AddBlog(blog);
-      logger.Info("Blog added - {name}", blog.Name);
+      // check for unique name
+      if (db.Blogs.Any(b => b.Name == blog.Name))
+      {
+        // generate validation error
+        isValid = false;
+        results.Add(new ValidationResult("Blog name exists", ["Name"]));
+      }
+      else
+      {
+        logger.Info("Validation passed");
+        // save blog to db
+        db.AddBlog(blog);
+        logger.Info("Blog added - {name}", blog.Name);
+      }
     }
     if (!isValid)
     {
