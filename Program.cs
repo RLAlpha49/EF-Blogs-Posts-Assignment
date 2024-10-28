@@ -13,6 +13,7 @@ do
   Console.WriteLine("1) Display all blogs");
   Console.WriteLine("2) Add Blog");
   Console.WriteLine("5) Delete Blog");
+  Console.WriteLine("6) Edit Blog");
   Console.WriteLine("Enter to quit");
   string? choice = Console.ReadLine();
   Console.Clear();
@@ -81,6 +82,17 @@ do
     else
     {
       logger.Error("Blog is null");
+    }
+  }
+  else if (choice == "6")
+  {
+    // edit blog
+    Console.WriteLine("Choose the blog to edit:");
+    var db = new DataContext();
+    var blog = GetBlog(db);
+    if (blog != null)
+    {
+      // TODO: input blog
     }
   }
   else if (String.IsNullOrEmpty(choice))
