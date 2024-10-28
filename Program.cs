@@ -1,4 +1,5 @@
 ﻿using NLog;
+using System.ComponentModel.DataAnnotations;
 string path = Directory.GetCurrentDirectory() + "//nlog.config";
 
 // create instance of Logger
@@ -34,9 +35,25 @@ do
     Console.Write("Enter a name for a new Blog: ");
     var blog = new Blog { Name = Console.ReadLine() };
 
-    var db = new DataContext();
-    db.AddBlog(blog);
-    logger.Info("Blog added - {name}", blog.Name);
+    ValidationContext context = new(blog, null, null);
+    List<ValidationResult> results = [];
+
+    var isValid = Validator.TryValidateObject(blog, context, results, true);
+    if (isValid)
+    {
+      var db = new DataContext();
+      logger.Info("Validation passed");
+      // save blog to db
+      db.AddBlog(blog);
+      logger.Info("Blog added - {name}", blog.Name);
+    }
+    if (!isValid)
+    {
+      foreach (var result in results)
+      {
+        logger.Error($"{result.MemberNames.First()} : {result.ErrorMessage}");
+      }
+    }
   }
   else if (String.IsNullOrEmpty(choice))
   {
