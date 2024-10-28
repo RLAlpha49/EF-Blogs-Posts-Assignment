@@ -34,37 +34,13 @@ do
   else if (choice == "2")
   {
     // Add blog
-    Console.Write("Enter a name for a new Blog: ");
-    var blog = new Blog { Name = Console.ReadLine() };
-
-    ValidationContext context = new(blog, null, null);
-    List<ValidationResult> results = [];
-
-    var isValid = Validator.TryValidateObject(blog, context, results, true);
-    if (isValid)
+    var db = new DataContext();
+    Blog? blog = InputBlog(db, logger);
+    if (blog != null)
     {
-      var db = new DataContext();
-      // check for unique name
-      if (db.Blogs.Any(b => b.Name == blog.Name))
-      {
-        // generate validation error
-        isValid = false;
-        results.Add(new ValidationResult("Blog name exists", ["Name"]));
-      }
-      else
-      {
-        logger.Info("Validation passed");
-        // save blog to db
-        db.AddBlog(blog);
-        logger.Info("Blog added - {name}", blog.Name);
-      }
-    }
-    if (!isValid)
-    {
-      foreach (var result in results)
-      {
-        logger.Error($"{result.MemberNames.First()} : {result.ErrorMessage}");
-      }
+      //blog.BlogId = BlogId;
+      db.AddBlog(blog);
+      logger.Info("Blog added - {name}", blog.Name);
     }
   }
   else if (choice == "5")
@@ -118,4 +94,39 @@ static Blog? GetBlog(DataContext db)
     return blog;
   }
   return null;
+}
+
+static Blog? InputBlog(DataContext db, NLog.Logger logger)
+{
+  Blog blog = new();
+  Console.WriteLine("Enter the Blog name");
+  blog.Name = Console.ReadLine();
+
+  ValidationContext context = new(blog, null, null);
+  List<ValidationResult> results = [];
+
+  var isValid = Validator.TryValidateObject(blog, context, results, true);
+  if (isValid)
+  {
+    // check for unique name
+    if (db.Blogs.Any(b => b.Name == blog.Name))
+    {
+      // generate validation error
+      isValid = false;
+      results.Add(new ValidationResult("Blog name exists", ["Name"]));
+    }
+    else
+    {
+      logger.Info("Validation passed");
+    }
+  }
+  if (!isValid)
+  {
+    foreach (var result in results)
+    {
+      logger.Error($"{result.MemberNames.First()} : {result.ErrorMessage}");
+    }
+    return null;
+  }
+  return blog;
 }
