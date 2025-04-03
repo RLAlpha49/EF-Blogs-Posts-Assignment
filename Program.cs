@@ -12,8 +12,8 @@ do
   Console.WriteLine("Enter your selection:");
   Console.WriteLine("1) Display all blogs");
   Console.WriteLine("2) Add Blog");
-  Console.WriteLine("5) Delete Blog");
-  Console.WriteLine("6) Edit Blog");
+  Console.WriteLine("3) Create Post");
+  Console.WriteLine("4) Display Posts");
   Console.WriteLine("Enter to quit");
   string? choice = Console.ReadLine();
   Console.Clear();
@@ -43,39 +43,45 @@ do
       logger.Info("Blog added - {name}", blog.Name);
     }
   }
-  else if (choice == "5")
+  else if (choice == "3")
   {
-    // delete blog
-    Console.WriteLine("Choose the blog to delete:");
+    // Create Post
     var db = new DataContext();
+    // Prompt user to select a blog
+    Console.WriteLine("Select the Blog you want to post to:");
     var blog = GetBlog(db);
     if (blog != null)
     {
-      // delete blog
-      db.DeleteBlog(blog);
-      logger.Info($"Blog (id: {blog.BlogId}) deleted");
+      // Get post details
+      Post? post = InputPost(blog, logger);
+      if (post != null)
+      {
+        db.AddPost(post);
+        logger.Info("Post added - {title} to blog {blog}", post.Title, blog.Name);
+      }
     }
     else
     {
-      logger.Error("Blog is null");
+      Console.WriteLine("No blog selected or invalid blog ID.");
+      logger.Error("Post creation failed - no blog selected");
     }
   }
-  else if (choice == "6")
+  else if (choice == "4")
   {
-    // edit blog
-    Console.WriteLine("Choose the blog to edit:");
+    // Display Posts
     var db = new DataContext();
+    // Prompt user to select a blog
+    Console.WriteLine("Select the Blog whose posts you want to view:");
     var blog = GetBlog(db);
     if (blog != null)
     {
-      // input blog
-      Blog? UpdatedBlog = InputBlog(db, logger);
-      if (UpdatedBlog != null)
-      {
-        UpdatedBlog.BlogId = blog.BlogId;
-        db.EditBlog(UpdatedBlog);
-        logger.Info($"Blog (id: {blog.BlogId}) updated");
-      }
+      // Display posts for the selected blog
+      DisplayBlogPosts(db, blog.BlogId);
+    }
+    else
+    {
+      Console.WriteLine("No blog selected or invalid blog ID.");
+      logger.Error("Post display failed - no blog selected");
     }
   }
   else if (String.IsNullOrEmpty(choice))
@@ -136,4 +142,63 @@ static Blog? InputBlog(DataContext db, NLog.Logger logger)
     return null;
   }
   return blog;
+}
+
+static Post? InputPost(Blog blog, NLog.Logger logger)
+{
+  Post post = new();
+  post.BlogId = blog.BlogId;
+  post.Blog = blog;
+  
+  Console.WriteLine("Enter the Post title:");
+  post.Title = Console.ReadLine();
+  
+  Console.WriteLine("Enter the Post content:");
+  post.Content = Console.ReadLine();
+
+  ValidationContext context = new(post, null, null);
+  List<ValidationResult> results = [];
+
+  var isValid = Validator.TryValidateObject(post, context, results, true);
+  if (isValid)
+  {
+    logger.Info("Post validation passed");
+  }
+  else
+  {
+    foreach (var result in results)
+    {
+      logger.Error($"{result.MemberNames.First()} : {result.ErrorMessage}");
+    }
+    return null;
+  }
+  return post;
+}
+
+static void DisplayBlogPosts(DataContext db, int blogId)
+{
+  var posts = db.Posts.Where(p => p.BlogId == blogId).ToList();
+  var blog = db.Blogs.FirstOrDefault(b => b.BlogId == blogId);
+  
+  if (blog == null)
+  {
+    Console.WriteLine("Blog not found.");
+    return;
+  }
+  
+  Console.WriteLine($"Posts for blog '{blog.Name}' (Total: {posts.Count}):");
+  
+  if (posts.Count == 0)
+  {
+    Console.WriteLine("No posts found for this blog.");
+    return;
+  }
+  
+  foreach (var post in posts)
+  {
+    Console.WriteLine($"Blog: {blog.Name}");
+    Console.WriteLine($"Title: {post.Title}");
+    Console.WriteLine($"Content: {post.Content}");
+    Console.WriteLine(new string('-', 30));
+  }
 }
