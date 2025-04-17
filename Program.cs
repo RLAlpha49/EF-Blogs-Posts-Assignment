@@ -70,13 +70,32 @@ do
   {
     // Display Posts
     var db = new DataContext();
-    // Prompt user to select a blog
+    // Prompt user to select a blog or all blogs
     Console.WriteLine("Select the Blog whose posts you want to view:");
-    var blog = GetBlog(db);
-    if (blog != null)
+    Console.WriteLine("0: All Blogs");
+    var blogs = db.Blogs.OrderBy(b => b.BlogId).ToList();
+    foreach (Blog b in blogs)
     {
-      // Display posts for the selected blog
-      DisplayBlogPosts(db, blog.BlogId);
+      Console.WriteLine($"{b.BlogId}: {b.Name}");
+    }
+    string? input = Console.ReadLine();
+    if (input == "0")
+    {
+      DisplayAllBlogPosts(db);
+    }
+    else if (int.TryParse(input, out int blogId))
+    {
+      var blog = db.Blogs.FirstOrDefault(b => b.BlogId == blogId);
+      if (blog != null)
+      {
+        // Display posts for the selected blog
+        DisplayBlogPosts(db, blog.BlogId);
+      }
+      else
+      {
+        Console.WriteLine("No blog selected or invalid blog ID.");
+        logger.Error("Post display failed - no blog selected");
+      }
     }
     else
     {
@@ -84,7 +103,7 @@ do
       logger.Error("Post display failed - no blog selected");
     }
   }
-  else if (String.IsNullOrEmpty(choice))
+  else if (string.IsNullOrEmpty(choice))
   {
     break;
   }
@@ -149,10 +168,10 @@ static Post? InputPost(Blog blog, NLog.Logger logger)
   Post post = new();
   post.BlogId = blog.BlogId;
   post.Blog = blog;
-  
+
   Console.WriteLine("Enter the Post title:");
   post.Title = Console.ReadLine();
-  
+
   Console.WriteLine("Enter the Post content:");
   post.Content = Console.ReadLine();
 
@@ -179,26 +198,55 @@ static void DisplayBlogPosts(DataContext db, int blogId)
 {
   var posts = db.Posts.Where(p => p.BlogId == blogId).ToList();
   var blog = db.Blogs.FirstOrDefault(b => b.BlogId == blogId);
-  
+
   if (blog == null)
   {
     Console.WriteLine("Blog not found.");
     return;
   }
-  
+
   Console.WriteLine($"Posts for blog '{blog.Name}' (Total: {posts.Count}):");
-  
+
   if (posts.Count == 0)
   {
     Console.WriteLine("No posts found for this blog.");
     return;
   }
-  
+
   foreach (var post in posts)
   {
     Console.WriteLine($"Blog: {blog.Name}");
     Console.WriteLine($"Title: {post.Title}");
     Console.WriteLine($"Content: {post.Content}");
     Console.WriteLine(new string('-', 30));
+  }
+}
+
+static void DisplayAllBlogPosts(DataContext db)
+{
+  var blogs = db.Blogs.OrderBy(b => b.Name).ToList();
+  if (blogs.Count == 0)
+  {
+    Console.WriteLine("No blogs found.");
+    return;
+  }
+  foreach (var blog in blogs)
+  {
+    var posts = db.Posts.Where(p => p.BlogId == blog.BlogId).ToList();
+    Console.WriteLine($"Posts for blog '{blog.Name}' (Total: {posts.Count}):");
+    if (posts.Count == 0)
+    {
+      Console.WriteLine("  No posts found for this blog.");
+    }
+    else
+    {
+      foreach (var post in posts)
+      {
+        Console.WriteLine($"  Title: {post.Title}");
+        Console.WriteLine($"  Content: {post.Content}");
+        Console.WriteLine(new string('-', 30));
+      }
+    }
+    Console.WriteLine();
   }
 }
